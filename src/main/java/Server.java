@@ -10,59 +10,51 @@ import java.util.List;
 import java.util.Set;
 
 public class Server {
-    private ServerSocket serverSocket;
+    private ServerSocketChannel serverSocketChannel;
+    private Selector selector;
+    private SelectionKey key;
 
     public Server(int port) {
-        try {
-            serverSocket = new ServerSocket(port);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public List<Client> ecouterClients(final int tempsEcoute) {
-        List<Client> clients = new ArrayList<>();
-        List<Socket> socketsClient = new ArrayList<>();
-        final long debutTimer = System.currentTimeMillis();
-        Selector selector = null;
-        ServerSocketChannel serverSocketChannel = null;
-        SelectionKey key = null;
+        selector = null;
+        serverSocketChannel = null;
+        key = null;
         try {
             InetAddress host = InetAddress.getByName("localhost");
             selector = Selector.open();
             serverSocketChannel = ServerSocketChannel.open();
             serverSocketChannel.configureBlocking(false);
-            serverSocketChannel.bind(new InetSocketAddress(host, 1234));
+            serverSocketChannel.bind(new InetSocketAddress(host, port));
             serverSocketChannel.register(selector, SelectionKey.
                     OP_ACCEPT);
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public List<Client> ecouterClients(final int tempsEcoute)
+        throws IOException{
+        List<Client> clients = new ArrayList<>();
+        List<SocketChannel> socketsChannelClient = new ArrayList<>();
+        final long debutTimer = System.currentTimeMillis();
 
         while(System.currentTimeMillis() < debutTimer + tempsEcoute * 1000) {
-            try {
-                if (selector.select() <= 0)
-                    continue;
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            System.out.println("before");
+            selector.select();
+            System.out.println("after");
             Set<SelectionKey> selectedKeys = selector.selectedKeys();
-            Iterator<SelectionKey> iterator = selectedKeys.iterator();
-            while (iterator.hasNext()) {
-                key = (SelectionKey) iterator.next();
-                iterator.remove();
-                if (key.isAcceptable()) {
-                    SocketChannel sc = null;
-                    try {
-                        sc = serverSocketChannel.accept();
-                        sc.configureBlocking(false);
-                        sc.register(selector, SelectionKey.
-                                OP_READ);
-                    } catch (IOException e) {
-                        e.printStackTrace();
+            Iterator<SelectionKey> iter = selectedKeys.iterator();
+                while (iter.hasNext()) {
+                    System.out.println("after");
+                    SelectionKey key = iter.next();
+
+                    if (key.isAcceptable()) {
+                        SocketChannel client = serverSocketChannel.accept();
+                        client.configureBlocking(false);
+                        client.register(selector, SelectionKey.OP_READ);
+                        System.out.println(selector.selectNow());
                     }
+                    iter.remove();
                 }
-            }
         }
         return clients;
     }

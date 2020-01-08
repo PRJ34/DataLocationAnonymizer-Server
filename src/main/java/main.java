@@ -1,3 +1,7 @@
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.channels.SocketChannel;
+
 public class main {
     public static void main(String[] args){
         int tempsEcoute = Integer.valueOf(args[0]); // Seconde
@@ -5,7 +9,12 @@ public class main {
 
         System.out.println("Lancement du serveur sur le port " + portEcoute + ", temps ecoute :" + tempsEcoute);
         Server srv = new Server(portEcoute);
-        srv.ecouterClients(tempsEcoute);
+        try {
+            srv.ecouterClients(tempsEcoute);
+            SocketChannel socketChannel = SocketChannel.open(new InetSocketAddress("localhost", portEcoute));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
 
