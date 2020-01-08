@@ -35,26 +35,22 @@ public class Server {
         throws IOException{
         List<Client> clients = new ArrayList<>();
         List<SocketChannel> socketsChannelClient = new ArrayList<>();
+        selector.select();
         final long debutTimer = System.currentTimeMillis();
-
         while(System.currentTimeMillis() < debutTimer + tempsEcoute * 1000) {
-            System.out.println("before");
-            selector.select();
-            System.out.println("after");
             Set<SelectionKey> selectedKeys = selector.selectedKeys();
             Iterator<SelectionKey> iter = selectedKeys.iterator();
                 while (iter.hasNext()) {
-                    System.out.println("after");
                     SelectionKey key = iter.next();
-
                     if (key.isAcceptable()) {
                         SocketChannel client = serverSocketChannel.accept();
                         client.configureBlocking(false);
                         client.register(selector, SelectionKey.OP_READ);
-                        System.out.println(selector.selectNow());
+                        System.out.println(selector.keys().size());
                     }
                     iter.remove();
                 }
+                selector.select(1);
         }
         return clients;
     }
