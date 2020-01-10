@@ -73,8 +73,10 @@ public class Server {
 
             if (s.isConnected()) {
                 try {
-                    s.read(buffer);
-                    String str = StandardCharsets.UTF_8.decode(buffer).toString();
+                    while(buffer.remaining() == 250) {
+                        s.read(buffer);
+                    }
+                    String str = new String(buffer.array(), "UTF-8");
                     System.out.println("Client : " + str);
                     String[] strSplit = str.split(":");
                     Client c = new Client(Integer.valueOf(strSplit[0]), strSplit[1], "localhost", Integer.valueOf(strSplit[2]));

@@ -12,7 +12,7 @@ public class main {
         try {
             srv.ecouterClients(tempsEcoute);
             srv.sendBeginSignal();
-            //SocketChannel socketChannel = SocketChannel.open(new InetSocketAddress("localhost", portEcoute));
+            srv.waitClients();
         } catch (IOException e) {
             e.printStackTrace();
         }
