@@ -13,6 +13,7 @@ public class main {
             srv.ecouterClients(tempsEcoute);
             srv.sendBeginSignal();
             srv.waitClients();
+            srv.sendClients();
         } catch (IOException e) {
             e.printStackTrace();
         }

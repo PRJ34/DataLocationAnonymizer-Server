@@ -1,6 +1,7 @@
 import java.io.IOException;
 import java.net.*;
 import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -47,7 +48,7 @@ public class Server {
                         client.configureBlocking(false);
                         client.register(selector, SelectionKey.OP_READ);
                         this.socketsChannelClient.add(client);
-                        System.out.println(selector.keys().size());
+                        System.out.println(socketsChannelClient.size());
                     }
                     iter.remove();
                 }
@@ -65,30 +66,34 @@ public class Server {
         }
     }
 
-    public Map<SocketChannel, Client> waitClients() {
-        this.socketClients = new HashMap<>();
-
-        for (SocketChannel s : this.socketsChannelClient) {
-            ByteBuffer buffer = ByteBuffer.allocate(250);
-
-            if (s.isConnected()) {
-                try {
-                    while(buffer.remaining() == 250) {
-                        s.read(buffer);
-                    }
-                    String str = new String(buffer.array(), "UTF-8");
-                    System.out.println("Client : " + str);
-                    String[] strSplit = str.split(":");
-                    Client c = new Client(Integer.valueOf(strSplit[0]), strSplit[1], "localhost", Integer.valueOf(strSplit[2]));
-                    socketClients.put(s, c);
-                } catch (IOException e) {
-                    e.printStackTrace();
+    public void waitClients() throws IOException {
+        socketClients = new HashMap<>();
+        ByteBuffer buffer = ByteBuffer.allocate(250);
+        selector.select();
+        int i = 0;
+        while(true) {
+            if(i == 3)
+                break;
+            Set<SelectionKey> selectedKeys = selector.selectedKeys();
+            Iterator<SelectionKey> iter = selectedKeys.iterator();
+            while (iter.hasNext()) {
+                SelectionKey key = iter.next();
+                if (key.isReadable()) {
+                    SocketChannel client = (SocketChannel) key.channel();
+                    client.read(buffer);
+                    buffer.flip();
+                    CharBuffer s = StandardCharsets.UTF_8.decode(buffer);
+                    buffer.clear();
+                    System.out.println(s.toString());
+                    String[] strSplit = s.toString().split(":");
+                    Client c = new Client(Integer.valueOf(strSplit[0]), strSplit[2], "localhost", Integer.valueOf(strSplit[1]));
+                    socketClients.put(client, c);
+                    i++;
                 }
-
+                iter.remove();
             }
+            selector.select(100);
         }
-
-        return this.socketClients;
     }
 
     private String buildClientsData() {
