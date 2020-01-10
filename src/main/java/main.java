@@ -11,7 +11,8 @@ public class main {
         Server srv = new Server(portEcoute);
         try {
             srv.ecouterClients(tempsEcoute);
-            SocketChannel socketChannel = SocketChannel.open(new InetSocketAddress("localhost", portEcoute));
+            srv.sendBeginSignal();
+            //SocketChannel socketChannel = SocketChannel.open(new InetSocketAddress("localhost", portEcoute));
         } catch (IOException e) {
             e.printStackTrace();
         }

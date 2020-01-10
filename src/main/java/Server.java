@@ -1,18 +1,19 @@
 import java.io.IOException;
 import java.net.*;
+import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 
 public class Server {
     private ServerSocketChannel serverSocketChannel;
     private Selector selector;
     private SelectionKey key;
+    private List<SocketChannel> socketsChannelClient;
+    Map<SocketChannel, Client>  socketClients;
 
     public Server(int port) {
         selector = null;
@@ -31,10 +32,9 @@ public class Server {
         }
     }
 
-    public List<Client> ecouterClients(final int tempsEcoute)
+    public List<SocketChannel> ecouterClients(final int tempsEcoute)
         throws IOException{
-        List<Client> clients = new ArrayList<>();
-        List<SocketChannel> socketsChannelClient = new ArrayList<>();
+        this.socketsChannelClient = new ArrayList<>();
         selector.select();
         final long debutTimer = System.currentTimeMillis();
         while(System.currentTimeMillis() < debutTimer + tempsEcoute * 1000) {
@@ -46,12 +46,73 @@ public class Server {
                         SocketChannel client = serverSocketChannel.accept();
                         client.configureBlocking(false);
                         client.register(selector, SelectionKey.OP_READ);
+                        this.socketsChannelClient.add(client);
                         System.out.println(selector.keys().size());
                     }
                     iter.remove();
                 }
                 selector.select(1);
         }
-        return clients;
+        return this.socketsChannelClient;
+    }
+
+    // Nécessite l'execution de "ecouterClients" pour fonctionner
+    public void sendBeginSignal() {
+        String beginSignal = "ok";
+
+        for (SocketChannel s : this.socketsChannelClient) {
+            sendString(s, beginSignal);
+        }
+    }
+
+    public Map<SocketChannel, Client> waitClients() {
+        this.socketClients = new HashMap<>();
+
+        for (SocketChannel s : this.socketsChannelClient) {
+            ByteBuffer buffer = ByteBuffer.allocate(250);
+
+            if (s.isConnected()) {
+                try {
+                    s.read(buffer);
+                    String str = StandardCharsets.UTF_8.decode(buffer).toString();
+                    System.out.println("Client : " + str);
+                    String[] strSplit = str.split(":");
+                    Client c = new Client(Integer.valueOf(strSplit[0]), strSplit[1], "localhost", Integer.valueOf(strSplit[2]));
+                    socketClients.put(s, c);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+            }
+        }
+
+        return this.socketClients;
+    }
+
+    private String buildClientsData() {
+        String allClientsData = "";
+
+        for (SocketChannel s : socketClients.keySet()) {
+            Client c = socketClients.get(s);
+            allClientsData += c.toString() + ";";
+        }
+
+        return allClientsData;
+    }
+
+    public void sendClients() {
+        String clientsData = this.buildClientsData();
+
+        for (SocketChannel s : socketClients.keySet()) {
+            sendString(s, clientsData);
+        }
+    }
+
+    public void sendString(SocketChannel socket, String text) {
+        try {
+            socket.write(StandardCharsets.UTF_8.encode(text));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
