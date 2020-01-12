@@ -7,6 +7,8 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class Server {
@@ -58,8 +60,8 @@ public class Server {
     }
 
     // Nécessite l'execution de "ecouterClients" pour fonctionner
-    public void sendBeginSignal() {
-        String beginSignal = "ok";
+    public void sendBeginSignal(String interval) {
+        String beginSignal = "start:"+interval;
 
         for (SocketChannel s : this.socketsChannelClient) {
             sendString(s, beginSignal);
@@ -132,6 +134,13 @@ public class Server {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public String parseStringDatesToInterval(String stringDate1, String stringDate2) throws ParseException {
+        SimpleDateFormat formater = new SimpleDateFormat("yyyy:MM:dd:HH:mm:ss");
+        Date date1 = formater.parse(stringDate1);
+        Date date2 = formater.parse(stringDate2);
+        return date1.getTime()+" "+date2.getTime();
     }
 
     private static void byte2hex(byte b, StringBuffer buf) {
