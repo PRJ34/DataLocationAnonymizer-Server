@@ -10,9 +10,13 @@ public class main {
         System.out.println("Lancement du serveur sur le port " + portEcoute + ", temps ecoute :" + tempsEcoute);
         Server srv = new Server(portEcoute);
         try {
+            System.out.println("LISTEN");
             srv.ecouterClients(tempsEcoute);
+            System.out.println("SEND BEGIN");
             srv.sendBeginSignal();
+            System.out.println("WAIT CLIENTS");
             srv.waitClients();
+            System.out.println("SEND TABLE");
             srv.sendClients();
         } catch (IOException e) {
             e.printStackTrace();

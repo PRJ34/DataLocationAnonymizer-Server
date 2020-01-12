@@ -48,7 +48,7 @@ public class Server {
                         client.configureBlocking(false);
                         client.register(selector, SelectionKey.OP_READ);
                         this.socketsChannelClient.add(client);
-                        System.out.println(socketsChannelClient.size());
+                        System.out.println("Clients connectés : "+socketsChannelClient.size());
                     }
                     iter.remove();
                 }
@@ -68,11 +68,11 @@ public class Server {
 
     public void waitClients() throws IOException {
         socketClients = new HashMap<>();
-        ByteBuffer buffer = ByteBuffer.allocate(250);
+        ByteBuffer buffer = ByteBuffer.allocate(1000);
         selector.select();
         int i = 0;
         while(true) {
-            if(i == 3)
+            if(i >= socketsChannelClient.size())
                 break;
             Set<SelectionKey> selectedKeys = selector.selectedKeys();
             Iterator<SelectionKey> iter = selectedKeys.iterator();
@@ -82,11 +82,16 @@ public class Server {
                     SocketChannel client = (SocketChannel) key.channel();
                     client.read(buffer);
                     buffer.flip();
-                    CharBuffer s = StandardCharsets.UTF_8.decode(buffer);
+                    int length = buffer.getInt();
+                    byte[] string_buffer = new byte[length];
+                    buffer.get(string_buffer);
+                    ByteBuffer string_bb = ByteBuffer.wrap(string_buffer);
+                    CharBuffer s = StandardCharsets.UTF_8.decode(string_bb);
+                    byte[] byte_buffer = new byte[buffer.remaining()];
+                    buffer.get(byte_buffer);
                     buffer.clear();
-                    System.out.println(s.toString());
                     String[] strSplit = s.toString().split(":");
-                    Client c = new Client(Integer.valueOf(strSplit[0]), strSplit[2], "localhost", Integer.valueOf(strSplit[1]));
+                    Client c = new Client(Integer.valueOf(strSplit[0]), byte_buffer, "localhost", Integer.valueOf(strSplit[1]));
                     socketClients.put(client, c);
                     i++;
                 }
@@ -96,22 +101,28 @@ public class Server {
         }
     }
 
-    private String buildClientsData() {
-        String allClientsData = "";
-
+    private ByteBuffer buildClientsData() {
+        ArrayList<ByteBuffer> buffers = new ArrayList<>();
+        int capacity = 0;
         for (SocketChannel s : socketClients.keySet()) {
             Client c = socketClients.get(s);
-            allClientsData += c.toString() + ";";
+            ByteBuffer clientBB = c.toByteBuffer();
+            buffers.add(clientBB);
+            capacity += clientBB.capacity()+4;
         }
-
-        return allClientsData;
+        ByteBuffer payload = ByteBuffer.allocate(capacity);
+        for(ByteBuffer bb : buffers){
+            bb.flip();
+            payload.putInt(bb.limit()).put(bb);
+        }
+        return payload;
     }
 
-    public void sendClients() {
-        String clientsData = this.buildClientsData();
-
+    public void sendClients() throws IOException {
+        ByteBuffer clientsData = this.buildClientsData();
         for (SocketChannel s : socketClients.keySet()) {
-            sendString(s, clientsData);
+            clientsData.rewind();
+            s.write(clientsData);
         }
     }
 
@@ -121,5 +132,26 @@ public class Server {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private static void byte2hex(byte b, StringBuffer buf) {
+        char[] hexChars = { '0', '1', '2', '3', '4', '5', '6', '7', '8',
+                '9', 'A', 'B', 'C', 'D', 'E', 'F' };
+        int high = ((b & 0xf0) >> 4);
+        int low = (b & 0x0f);
+        buf.append(hexChars[high]);
+        buf.append(hexChars[low]);
+    }
+
+    private static String toHexString(byte[] block) {
+        StringBuffer buf = new StringBuffer();
+        int len = block.length;
+        for (int i = 0; i < len; i++) {
+            byte2hex(block[i], buf);
+            if (i < len-1) {
+                buf.append(":");
+            }
+        }
+        return buf.toString();
     }
 }
