@@ -11,6 +11,7 @@ public class main {
         System.out.println("Lancement du serveur sur le port " + portEcoute + ", temps ecoute :" + tempsEcoute);
         Server srv = new Server(portEcoute);
         Scanner keyboard = new Scanner(System.in);
+        //2020:01:01:12:00:00 2020:01:01:23:00:00
         System.out.println("enter a timeframe : yyyy:MM:dd:HH:mm:ss yyyy:MM:dd:HH:mm:ss");
         String time1 = keyboard.next();
         String time2 = keyboard.next();
