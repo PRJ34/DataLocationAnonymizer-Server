@@ -14,6 +14,10 @@ public class main {
             srv.ecouterClients(tempsEcoute);
             System.out.println("SEND BEGIN");
             srv.sendBeginSignal();
+            // Début test
+            System.out.println("WAIT HEATMAP");
+            srv.waitHeatmaps();
+            // Fin test
             System.out.println("WAIT CLIENTS");
             srv.waitClients();
             System.out.println("SEND TABLE");
