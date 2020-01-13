@@ -24,6 +24,7 @@ public class main {
             srv.waitClients();
             System.out.println("SEND TABLE");
             srv.sendClients();
+
         } catch (IOException e) {
             e.printStackTrace();
         } catch (ParseException e) {
