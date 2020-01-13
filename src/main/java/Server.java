@@ -1,4 +1,5 @@
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -100,6 +101,46 @@ public class Server {
                 iter.remove();
             }
             selector.select(100);
+        }
+    }
+
+    public void waitHeatmaps() throws IOException {
+        selector.select();
+
+        int nbClients = 0;
+        while (nbClients < socketsChannelClient.size()) { // TODO
+            Set<SelectionKey> selectedKeys = selector.selectedKeys();
+            Iterator<SelectionKey> iter = selectedKeys.iterator();
+            while (iter.hasNext()) {
+                SelectionKey key = iter.next();
+                if (key.isReadable()) {
+                    SocketChannel client = (SocketChannel) key.channel();
+
+                    ObjectInputStream ois =
+                            new ObjectInputStream(client.socket().getInputStream());
+
+                    try {
+                        int[][] s = (int[][])ois.readObject();
+                    } catch (ClassNotFoundException e) {
+                        e.printStackTrace();
+                    }
+
+//                    List<ByteBuffer[]> buffers = new ArrayList<>();
+//
+//                    for (int i = 0; i < Heatmap.HEATMAP_ROW; i++) {
+//                        ByteBuffer buffer[] = new ByteBuffer[Heatmap.HEATMAP_COL];
+//                        for (int j = 0; j < Heatmap.HEATMAP_COL; j++) {
+//                            buffer[j] = ByteBuffer.allocate(2048);
+//                            client.read(buffer[j]);
+//                            //buffer[j].flip();
+//                            System.out.print(buffer[j].getDouble());
+//                        }
+//                        System.out.println();
+//                        buffers.add(buffer);
+//                    }
+                    nbClients++;
+                }
+            }
         }
     }
 
